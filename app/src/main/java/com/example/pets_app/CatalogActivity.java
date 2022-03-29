@@ -18,25 +18,32 @@ package com.example.pets_app;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.AdapterView;
+import android.widget.ListView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.CursorLoader;
+import androidx.loader.content.Loader;
 
 import com.example.pets_app.data.PetContract;
-import com.example.pets_app.data.PetDbHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>{
 //    private PetDbHelper mDbHelper;
+
+    private static final int PET_LOADER = 0;
+    PetCursorAdapter mCursorAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +60,29 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
 
+        // Find the ListView which will be populated with the pet data
+        ListView petListView = (ListView) findViewById(R.id.list);
+
+        // Find and set empty view on the ListView, so that it only shows when the list has 0 items.
+        View emptyView = findViewById(R.id.empty_view);
+        petListView.setEmptyView(emptyView);
+
+//set an adapter for to crate a list item for each row of pet data cursor
+        //there is no pet data yet ,so ass in null for the cursor
+        mCursorAdapter = new PetCursorAdapter(this,null);
+        petListView.setAdapter(mCursorAdapter);
+
+
+        petListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+
+            }
+        });
+
+        //kick off the loader
+getLoaderManager().initLoader(PET_LOADER,null,this);
 
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
@@ -62,7 +92,7 @@ public class CatalogActivity extends AppCompatActivity {
       //  displayDatabaseInfo();
     }
 
-
+/*
 
     @Override
     protected void onStart() {
@@ -73,7 +103,7 @@ public class CatalogActivity extends AppCompatActivity {
     /**
      * Temporary helper method to display information in the onscreen TextView about the state of
      * the pets database.
-     */
+
     private void displayDatabaseInfo() {
         // Create and/or open a database to read from it
 //        SQLiteDatabase db = mDbHelper.getReadableDatabase();
@@ -96,7 +126,12 @@ public class CatalogActivity extends AppCompatActivity {
                 null                 // Don't group the rows
                 );                   // The sort order
 
-        TextView displayView = (TextView) findViewById(R.id.text_view_pet);
+       // TextView displayView = (TextView) findViewById(R.id.text_view_pet);
+
+        // Find the ListView which will be populated with the pet data
+        ListView petListView = (ListView) findViewById(R.id.list);
+
+/*
 
         try {
             // Create a header in the Text View that looks like this:
@@ -141,7 +176,22 @@ public class CatalogActivity extends AppCompatActivity {
             // resources and makes it invalid.
             cursor.close();
         }
+
+
+
+
+
+
+        // Setup an Adapter to create a list item for each row of pet data in the Cursor.
+        PetCursorAdapter adapter = new PetCursorAdapter(this, cursor);
+
+        // Attach the adapter to the ListView.
+        petListView.setAdapter(adapter);
     }
+
+
+ */
+
 
 
 
@@ -163,7 +213,7 @@ public class CatalogActivity extends AppCompatActivity {
 
         // Insert a new row for Toto in the database, returning the ID of that new row.
         // The first argument for db.insert() is the pets table name.
-        // The second argument provides the name of a column in which the framework
+        // The second argument provides the name of a column in which
         // can insert NULL in the event that the ContentValues is empty (if
         // this is set to "null", then the framework will not insert a row when
         // there are no values).
@@ -177,6 +227,7 @@ public class CatalogActivity extends AppCompatActivity {
         // Inflate the menu options from the res/menu/menu_catalog.xml file.
         // This adds menu items to the app bar.
         getMenuInflater().inflate(R.menu.menu_catalog, menu);
+
         return true;
     }
 
@@ -187,16 +238,57 @@ public class CatalogActivity extends AppCompatActivity {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertPet();
-                displayDatabaseInfo();
+//                displayDatabaseInfo(); due to cursur loader
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
                 // Do nothing for now
                 return true;
         }
-
         return super.onOptionsItemSelected(item);
+    }
+
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
+        String[] projection = {
+                PetContract.PetEntry._ID,
+                PetContract.PetEntry.COLUMN_PET_NAME,
+                PetContract.PetEntry.COLUMN_PET_BREED};
+
+        // Perform a query on the pets table
+//        Cursor cursor = getContentResolver().query(
+return new CursorLoader(this,
+                PetContract.PetEntry.CONTENT_URI,   // The table to query
+                projection,            // The columns to return
+                null,                  // The columns for the WHERE clause
+                null,                  // The values for the WHERE clause
+                null                 // Don't group the rows
+        );                   // The sort order
+
+        // TextView displayView = (TextView) findViewById(R.id.text_view_pet);
+
+        // Find the ListView which will be populated with the pet data
+//        ListView petListView = (ListView) findViewById(R.id.list);
+
+//        return null;
+    }
+
+
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+
+        mCursorAdapter.swapCursor(data);
 
     }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        mCursorAdapter.swapCursor(null);
+
+
+    }
+
 
 }
